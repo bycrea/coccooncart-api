@@ -5,13 +5,22 @@
         "php": "^7.1.3",
         "ext-ctype": "*",
         "ext-iconv": "*",
+        "ext-json": "*",
+        "lexik/jwt-authentication-bundle": "^2.6",
+        "nelmio/cors-bundle": "^1.5",
+        "symfony/apache-pack": "^1.0",
+        "symfony/asset": "4.3.*",
         "symfony/console": "4.3.*",
         "symfony/dotenv": "4.3.*",
         "symfony/flex": "^1.3.1",
         "symfony/framework-bundle": "4.3.*",
+        "symfony/orm-pack": "*",
+        "symfony/security-bundle": "4.3.*",
         "symfony/yaml": "4.3.*"
     },
     "require-dev": {
+        "symfony/debug-pack": "*",
+        "symfony/maker-bundle": "^1.0"
     },
     "config": {
         "preferred-install": {
