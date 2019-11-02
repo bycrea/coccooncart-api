@@ -58,12 +58,16 @@ class ApiController extends AbstractController
 
             $listId = !empty($cart) ? $cart->getId() : null;
             $list = !empty($cart) ? $cart->getList() : null;
+            $modify = !empty($cart)
+                ? $cart->getModifyAt()
+                : new DateTime();
 
             return $this->json([
                 'username' => $user->getUsername(),
                 'error' => $error,
-                'listId' => $listId,
                 'list' => $list,
+                'listId' => $listId,
+                'modify' => $modify->format('d/m/y H:i'),
                 'categories' => $categories
             ]);
 
@@ -77,12 +81,12 @@ class ApiController extends AbstractController
 
 
     /**
-     * @Route("/updatelist", name="api_updatelist")
+     * @Route("/updateProduct", name="api_updateProduct")
      * @param EntityManagerInterface $em
      * @param Request $request
      * @return JsonResponse
      */
-    public function apiUpdateListAction(EntityManagerInterface $em, Request $request)
+    public function apiUpdateProductAction(EntityManagerInterface $em, Request $request)
     {
         $data = json_decode($request->getContent(), true);
 
@@ -94,10 +98,36 @@ class ApiController extends AbstractController
 
         $error = false;
         try {
-            $cart->setList($data['list']);
-            $cart->setNbProduct(count($data['list']));
-            $cart->setClosed($data['closed']);
-            $cart->setAmount($data['amount']);
+
+            $list = $cart->getList();
+
+            switch($data['action']) {
+                case 'add':
+                    array_unshift($list, $data['product']);
+                    $cart->setList($list);
+                    break;
+
+                case 'check':
+                    $product = $list[$data['product']];
+                    $product['checked'] = isset($product['checked']) ? !$product['checked'] : true;
+                    $list[$data['product']] = $product;
+                    $cart->setList($list);
+                    break;
+
+                case 'delete':
+                    unset($list[$data['product']]);
+                    $newList = array_values($list);
+                    $cart->setList($newList);
+                    break;
+
+                default:
+                    $cart->setList($list);
+                    break;
+            }
+
+            $cart->setNbProduct(count($cart->getList()));
+            $cart->setClosed(false);
+            $cart->setAmount(0);
             $cart->setModifyAt(new DateTime());
             $cart->setUsers($this->getUserFromToken());
 
@@ -105,19 +135,16 @@ class ApiController extends AbstractController
             $entityManager->persist($cart);
             $entityManager->flush();
 
-            $listId = $cart->getId();
-
         } catch (Exception $e) {
 
             $error = $e;
-            $listId = null;
         }
 
         return $this->json([
             'error' => $error,
-            'listId' => $listId,
-            'modify' => $cart->getModifyAt()->format('d/m/y H:i'),
-            'nbProduct' => $cart->getNbProduct()
+            'list' => $cart->getList(),
+            'listId' => $cart->getId(),
+            'modify' => $cart->getModifyAt()->format('d/m/y H:i')
         ]);
     }
 
@@ -151,7 +178,7 @@ class ApiController extends AbstractController
 
             $cart->setList($checkedProducts);
             $cart->setNbProduct(count($checkedProducts));
-            $cart->setClosed($data['closed']);
+            $cart->setClosed(true);
             $cart->setAmount($data['amount']);
             $cart->setModifyAt(new DateTime());
             $cart->setUsers($this->getUserFromToken());
@@ -172,22 +199,17 @@ class ApiController extends AbstractController
 
             $entityManager->flush();
 
-            $listId = $cart->getId();
             $newListId = isset($newCart) ? $newCart->getId() : null;
 
         } catch (Exception $e) {
 
             $error = $e;
-            $listId = null;
             $newListId = null;
         }
 
         return $this->json([
             'error' => $error,
-            'oldId' => $listId,
-            'newId' => $newListId,
-            'modify' => $cart->getModifyAt()->format('d/m/y H:i'),
-            'nbProduct' => $cart->getNbProduct()
+            'newListId' => $newListId,
         ]);
     }
 
