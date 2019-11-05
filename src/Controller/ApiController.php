@@ -2,20 +2,18 @@
 
 namespace App\Controller;
 
+use DateTime;
+use Exception;
 use App\Entity\Cart;
 use App\Entity\Category;
 use App\Entity\User;
-use DateTime;
-use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
-use Exception;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
-
 
 /**
  * @Route("/api", name="api_")
@@ -34,6 +32,7 @@ class ApiController extends AbstractController
         $this->em = $entityManager;
     }
 
+
     protected function getUserFromToken()
     {
         $decodedJwtToken = $this->jwtManager->decode($this->tokenStorageInterface->getToken());
@@ -41,6 +40,7 @@ class ApiController extends AbstractController
         $user = $this->em->getRepository(User::class)->findOneBy(['username' => $username]);
         return $user;
     }
+
 
     /**
      * @Route("/getlist", name="api_getlist")
@@ -57,10 +57,8 @@ class ApiController extends AbstractController
             $categories = $em->getRepository(Category::class)->AllCategories();
 
             $listId = !empty($cart) ? $cart->getId() : null;
-            $list = !empty($cart) ? $cart->getList() : null;
-            $modify = !empty($cart)
-                ? $cart->getModifyAt()
-                : new DateTime();
+            $list   = !empty($cart) ? $cart->getList() : null;
+            $modify = !empty($cart) ? $cart->getModifyAt() : new DateTime();
 
             return $this->json([
                 'username' => $user->getUsername(),

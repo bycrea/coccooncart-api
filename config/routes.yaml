@@ -7,4 +7,3 @@ api_login_check:
 
 #api:
 #  path: /api
-#  controller: App\Controller\ApiController::index
