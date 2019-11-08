@@ -6,7 +6,6 @@ use App\Entity\Todo;
 use DateTime;
 use Exception;
 use App\Entity\Cart;
-use App\Entity\Category;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;

@@ -7,6 +7,16 @@ nelmio_cors:
         expose_headers: ['Link']
         #max_age: 3600
     paths:
+        '^/cart/':
+            allow_origin: ['*']
+            #allow_headers: ['X-Custom-Auth']
+            #allow_methods: ['POST', 'PUT', 'GET', 'DELETE', 'OPTIONS']
+            #max_age: 3600
+        '^/todo/':
+            allow_origin: ['*']
+            #allow_headers: ['X-Custom-Auth']
+            #allow_methods: ['POST', 'PUT', 'GET', 'DELETE', 'OPTIONS']
+            #max_age: 3600
         '^/api/':
             allow_origin: ['*']
             #allow_headers: ['X-Custom-Auth']
