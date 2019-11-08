@@ -4,7 +4,6 @@ namespace App\Controller;
 
 use App\Entity\Cart;
 use App\Entity\User;
-use App\Repository\CartRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -53,56 +52,12 @@ class AdminController extends AbstractController
 
 
     /**
-     * @Route("/refactor_catg", name="refactor_catg")
+     * @Route("/refactor_product_catg/{from}/{to}", name="refactor_catg_from_to")
      * @param int $from
      * @param int $to
      * @return JsonResponse
      */
-    public function refactorCatgAction()
-    {
-        $carts = $this->em->getRepository(Cart::class)->findAll();
-
-        $lists = [];
-        foreach ($carts as $cart) {
-            $lists[] = $cart->getList();
-        }
-
-        foreach ($lists as $list) {
-            foreach ($list as $product) {
-                if($product['idcategory'] != 1) {
-                    $product['idcategory']++;
-                }
-                dump($product);
-            }
-        }
-
-        //dd('done');
-        $error = false;
-        try {
-            foreach ($carts as $key => $cart) {
-                $cart->setList($lists[$key]);
-                $this->em->persist($cart);
-            }
-            $this->em->flush();
-
-        } catch (Exception $e) {
-            $error = $e;
-        }
-
-        return $this->json([
-            'error' => $error,
-            'done' => 'done'
-        ]);
-    }
-
-
-    /**
-     * @Route("/refactor_catg/{from}/{to}", name="refactor_catg_from_to")
-     * @param int $from
-     * @param int $to
-     * @return JsonResponse
-     */
-    public function refactorCatgFromToAction(int $from, int $to)
+    public function refactorAllProductsCatgFromToAction(int $from, int $to)
     {
         $carts = $this->em->getRepository(Cart::class)->findAll();
 
@@ -122,11 +77,22 @@ class AdminController extends AbstractController
 
         dd('done');
 
+        $error = false;
+        try {
+            foreach ($carts as $key => $cart) {
+                $cart->setList($lists[$key]);
+                $this->em->persist($cart);
+            }
+            $this->em->flush();
+
+        } catch (Exception $e) {
+            $error = $e;
+        }
+
         return $this->json([
-            'error' => $lists
+            'error' => $error,
+            'lists' => $lists,
+            'done' => 'done'
         ]);
     }
-
-
-
 }

@@ -16,9 +16,9 @@ use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 /**
- * @Route("/api", name="api_")
+ * @Route("/cart", name="cart_")
  */
-class ApiController extends AbstractController
+class CartController extends AbstractController
 {
     private $jwtManager;
     private $tokenStorageInterface;
@@ -43,11 +43,11 @@ class ApiController extends AbstractController
 
 
     /**
-     * @Route("/getlist", name="api_getlist")
+     * @Route("/getlist", name="getlist")
      * @param EntityManagerInterface $em
      * @return JsonResponse
      */
-    public function apiGetListAction(EntityManagerInterface $em)
+    public function cartGetListAction(EntityManagerInterface $em)
     {
         $error = false;
         $user = $this->getUserFromToken();
@@ -79,12 +79,12 @@ class ApiController extends AbstractController
 
 
     /**
-     * @Route("/updateProduct", name="api_updateProduct")
+     * @Route("/updateProduct", name="updateProduct")
      * @param EntityManagerInterface $em
      * @param Request $request
      * @return JsonResponse
      */
-    public function apiUpdateProductAction(EntityManagerInterface $em, Request $request)
+    public function cartUpdateProductAction(EntityManagerInterface $em, Request $request)
     {
         $data = json_decode($request->getContent(), true);
 
@@ -148,12 +148,12 @@ class ApiController extends AbstractController
 
 
     /**
-     * @Route("/closelist", name="api_closelist")
+     * @Route("/closelist", name="closelist")
      * @param EntityManagerInterface $em
      * @param Request $request
      * @return JsonResponse
      */
-    public function apiCloseListAction(EntityManagerInterface $em, Request $request)
+    public function cartCloseListAction(EntityManagerInterface $em, Request $request)
     {
         $data = json_decode($request->getContent(), true);
 

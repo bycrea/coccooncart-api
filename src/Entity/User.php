@@ -38,6 +38,12 @@ class User implements UserInterface
      */
     private $carts;
 
+    /**
+     * @ORM\OneToMany(targetEntity="App\Entity\Todo", mappedBy="users")
+     */
+    private $todos;
+
+
     public function getId(): ?int
     {
         return $this->id;
