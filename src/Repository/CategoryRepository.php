@@ -20,14 +20,21 @@ class CategoryRepository extends ServiceEntityRepository
     }
 
     /**
+     * @param string $orderBy
      * @return Category[] Returns an array of Category objects
      */
-    public function AllCategories()
+    public function AllCategories($orderBy)
     {
-        return $this->createQueryBuilder('c')
-            ->orderBy('c.id', 'ASC')
-            ->getQuery()
-            ->getArrayResult()
-        ;
+        $query = $this->createQueryBuilder('c');
+
+        switch($orderBy) {
+            case "a-Z": $query->orderBy('c.name', 'ASC'); break;
+            case "Z-a": $query->orderBy('c.name', 'DESC'); break;
+            case "Def": $query->orderBy('c.id', 'ASC'); break;
+            case "Inv": $query->orderBy('c.id', 'DESC'); break;
+            default: $query->orderBy('c.id', 'ASC'); break;
+        }
+        
+        return $query->getQuery()->getArrayResult();
     }
 }

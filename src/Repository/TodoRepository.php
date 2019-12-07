@@ -26,8 +26,7 @@ class TodoRepository extends ServiceEntityRepository
             ->select('t')
             ->andWhere('t.users = :user')
             ->setParameter('user', $user)
-            ->andWhere('t.closed = 0')
-            ->orderBy('t.modifyAt', 'ASC')
+            ->orderBy('t.modifyAt', 'DESC')
             ->getQuery()
             ->getArrayResult()
         ;
@@ -35,11 +34,12 @@ class TodoRepository extends ServiceEntityRepository
 
     public function getTodoById($id)
     {
-        return $this->createQueryBuilder('t')
+        $todo = $this->createQueryBuilder('t')
             ->andWhere('t.id = :id')
             ->setParameter('id', $id)
             ->getQuery()
             ->getArrayResult()
         ;
+        return $todo[0];
     }
 }

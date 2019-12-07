@@ -2,20 +2,20 @@
 
 namespace App\Controller;
 
-use App\Entity\Cart;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 /**
- * @Route("/admin", name="admin_")
+ * @Route("/api", name="api_")
  */
-class AdminController extends AbstractController
+class ApiController extends AbstractController
 {
     private $jwtManager;
     private $tokenStorageInterface;
@@ -41,58 +41,38 @@ class AdminController extends AbstractController
 
 
     /**
-     * @Route("/dash", name="dash")
-     */
-    public function dashAction()
-    {
-        return $this->json([
-            'error' => false
-        ]);
-    }
-
-
-    /**
-     * @Route("/refactor_product_catg/{from}/{to}", name="refactor_catg_from_to")
-     * @param int $from
-     * @param int $to
+     * @Route("/getuserdata", name="getuserdata")
+     * @param Request $request
      * @return JsonResponse
+     * @throws Exception
      */
-    /*public function refactorAllProductsCatgFromToAction(int $from, int $to)
+    /*public function getUserDataAction(Request $request)
     {
-        $carts = $this->em->getRepository(Cart::class)->findAll();
+        $data = json_decode($request->getContent(), true);
+        $user = $this->getUserFromToken();
+        $error = !($data['username'] == $user->getUsername());
 
-        $lists = [];
-        foreach ($carts as $cart) {
-            $lists[] = $cart->getList();
-        }
+        $options = false;
+        if(!$error) {
+            $options = $this->em->getRepository(UserOptions::class)->findOneBy(['users' => $user]);
 
-        foreach ($lists as $list) {
-            foreach ($list as $product) {
-                if($product['idcategory'] == $from) {
-                    $product['idcategory'] = $to;
-                }
-                dump($product);
+            if(empty($options)) {
+                $options = new UserOptions($user);
+            } else {
+                $options->setNbConnection($options->getNbConnection()+1);
+                $options->setLastConnection(new DateTime());
             }
-        }
 
-        dd('done');
+            $entityManager = $this->getDoctrine()->getManager();
+            $entityManager->persist($options);
+            $entityManager->flush();
 
-        $error = false;
-        try {
-            foreach ($carts as $key => $cart) {
-                $cart->setList($lists[$key]);
-                $this->em->persist($cart);
-            }
-            $this->em->flush();
-
-        } catch (Exception $e) {
-            $error = $e;
+            $options = $this->em->getRepository(UserOptions::class)->getUserOptions($user);
         }
 
         return $this->json([
             'error' => $error,
-            'lists' => $lists,
-            'done' => 'done'
+            'options' => $options
         ]);
     }*/
 }

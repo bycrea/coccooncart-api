@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\UserOptions;
 use DateTime;
 use Exception;
 use App\Entity\Cart;
@@ -44,17 +45,26 @@ class CartController extends AbstractController
 
     /**
      * @Route("/getlist", name="getlist")
-     * @param EntityManagerInterface $em
+     * @param Request $request
      * @return JsonResponse
      */
-    public function cartGetListAction(EntityManagerInterface $em)
+    public function getListAction(Request $request)
     {
+        $data = json_decode($request->getContent(), true);
+
         $error = false;
         $user = $this->getUserFromToken();
+        $options = $this->em->getRepository(UserOptions::class)->findOneBy(['users' => $user]);
 
         try {
-            $cart = $em->getRepository(Cart::class)->lastUserList($user);
-            $categories = $em->getRepository(Category::class)->AllCategories();
+            if($data['orderBy'] != null) {
+                $options->setOrderBy($data['orderBy']);
+                $this->em->persist($options);
+                $this->em->flush();
+            }
+
+            $cart = $this->em->getRepository(Cart::class)->lastUserList($user);
+            $categories = $this->em->getRepository(Category::class)->AllCategories($options->getOrderBy());
 
             $listId = !empty($cart) ? $cart->getId() : null;
             $list   = !empty($cart) ? $cart->getList() : null;
@@ -66,7 +76,8 @@ class CartController extends AbstractController
                 'list' => $list,
                 'listId' => $listId,
                 'modify' => $modify->format('d/m/y H:i'),
-                'categories' => $categories
+                'categories' => $categories,
+                'orderBy' => $options->getOrderBy()
             ]);
 
         } catch (Exception $e) {
@@ -79,19 +90,18 @@ class CartController extends AbstractController
 
 
     /**
-     * @Route("/updateProduct", name="updateProduct")
-     * @param EntityManagerInterface $em
+     * @Route("/updateproduct", name="updateproduct")
      * @param Request $request
      * @return JsonResponse
      */
-    public function cartUpdateProductAction(EntityManagerInterface $em, Request $request)
+    public function updateProductAction(Request $request)
     {
         $data = json_decode($request->getContent(), true);
 
         $cart = new Cart();
         if(!empty($data['listId']))
         {
-            $cart = $em->getRepository(Cart::class)->find($data['listId']);
+            $cart = $this->em->getRepository(Cart::class)->find($data['listId']);
         }
 
         $error = false;
@@ -123,15 +133,14 @@ class CartController extends AbstractController
                     break;
             }
 
-            $cart->setNbProduct(count($cart->getList()));
-            $cart->setClosed(false);
-            $cart->setAmount(0);
-            $cart->setModifyAt(new DateTime());
-            $cart->setUsers($this->getUserFromToken());
+            $cart->setNbProduct(count($cart->getList()))
+                ->setClosed(false)
+                ->setAmount(0)
+                ->setModifyAt(new DateTime())
+                ->setUsers($this->getUserFromToken());
 
-            $entityManager = $this->getDoctrine()->getManager();
-            $entityManager->persist($cart);
-            $entityManager->flush();
+            $this->em->persist($cart);
+            $this->em->flush();
 
         } catch (Exception $e) {
 
@@ -149,21 +158,20 @@ class CartController extends AbstractController
 
     /**
      * @Route("/closelist", name="closelist")
-     * @param EntityManagerInterface $em
      * @param Request $request
      * @return JsonResponse
      */
-    public function cartCloseListAction(EntityManagerInterface $em, Request $request)
+    public function closeListAction(Request $request)
     {
         $data = json_decode($request->getContent(), true);
 
-        $cart = $em->getRepository(Cart::class)->find($data['listId']);
+        $cart = $this->em->getRepository(Cart::class)->find($data['listId']);
         $products = $cart->getList();
 
         $uncheckedProducts = [];
         $checkedProducts = [];
         foreach ($products as $product) {
-            if(!isset($product['checked']) || !$product['checked']) {
+            if(!isset($product['checked']) || !$product['checked'] || $product['idcategory'] == 13) {
                 $uncheckedProducts[] = $product;
             } else {
                 $checkedProducts[] = $product;
@@ -172,30 +180,28 @@ class CartController extends AbstractController
 
         $error = false;
         try {
-            $entityManager = $this->getDoctrine()->getManager();
+            $cart->setList($checkedProducts)
+                ->setNbProduct(count($checkedProducts))
+                ->setClosed(true)
+                ->setAmount($data['amount'])
+                ->setModifyAt(new DateTime())
+                ->setUsers($this->getUserFromToken());
 
-            $cart->setList($checkedProducts);
-            $cart->setNbProduct(count($checkedProducts));
-            $cart->setClosed(true);
-            $cart->setAmount($data['amount']);
-            $cart->setModifyAt(new DateTime());
-            $cart->setUsers($this->getUserFromToken());
-
-            $entityManager->persist($cart);
+            $this->em->persist($cart);
 
             if(count($uncheckedProducts)) {
                 $newCart = new Cart();
-                $newCart->setList($uncheckedProducts);
-                $newCart->setNbProduct(count($uncheckedProducts));
-                $newCart->setClosed(false);
-                $newCart->setAmount(0);
-                $newCart->setModifyAt(new DateTime());
-                $newCart->setUsers($this->getUserFromToken());
+                $newCart->setList($uncheckedProducts)
+                    ->setNbProduct(count($uncheckedProducts))
+                    ->setClosed(false)
+                    ->setAmount(0)
+                    ->setModifyAt(new DateTime())
+                    ->setUsers($this->getUserFromToken());
 
-                $entityManager->persist($newCart);
+                $this->em->persist($newCart);
             }
 
-            $entityManager->flush();
+            $this->em->flush();
 
             $newListId = isset($newCart) ? $newCart->getId() : null;
 

@@ -43,6 +43,17 @@ class User implements UserInterface
      */
     private $todos;
 
+    /**
+     * @ORM\OneToOne(targetEntity="App\Entity\UserOptions", mappedBy="users", cascade={"persist", "remove"})
+     */
+    private $options;
+
+
+    public function __construct()
+    {
+        //$this->setOptions(new UserOptions($this));
+    }
+
 
     public function getId(): ?int
     {
@@ -115,5 +126,23 @@ class User implements UserInterface
     {
         // If you store any temporary, sensitive data on the user, clear it here
         // $this->plainPassword = null;
+    }
+
+    public function getOptions(): ?UserOptions
+    {
+        return $this->options;
+    }
+
+    public function setOptions(?UserOptions $options): self
+    {
+        $this->options = $options;
+
+        // set (or unset) the owning side of the relation if necessary
+        $newUsers = null === $options ? null : $this;
+        if ($options->getUsers() !== $newUsers) {
+            $options->setUsers($newUsers);
+        }
+
+        return $this;
     }
 }

@@ -5,7 +5,6 @@ namespace App\Controller;
 use App\Entity\Todo;
 use DateTime;
 use Exception;
-use App\Entity\Cart;
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
@@ -44,16 +43,15 @@ class TodoController extends AbstractController
 
     /**
      * @Route("/getall", name="getall")
-     * @param EntityManagerInterface $em
      * @return JsonResponse
      */
-    public function todoGetAllAction(EntityManagerInterface $em)
+    public function getAllAction()
     {
         $error = false;
         $user = $this->getUserFromToken();
 
         try {
-            $todos = $em->getRepository(Todo::class)->getTodosByUser($user);
+            $todos = $this->em->getRepository(Todo::class)->getTodosByUser($user);
             foreach ($todos as $key => $todo) {
                 $todos[$key]['modifyAt'] = $todo['modifyAt']->format('d/m/y H:i');
                 $todos[$key]['date'] = $todo['modifyAt']->format('d/m/y');
@@ -74,18 +72,33 @@ class TodoController extends AbstractController
 
 
     /**
-     * @Route("/getbyid", name="getbyid")
-     * @param EntityManagerInterface $em
+     * @Route("/newtodo", name="newtodo")
+     * @param Request $request
      * @return JsonResponse
      */
-    public function todoGetByIdAction(EntityManagerInterface $em, Request $request)
+    public function newToDoAction(Request $request)
     {
-        $error = false;
         $data = json_decode($request->getContent(), true);
+        $todo = new Todo();
 
+        $error = false;
         try {
-            $todo = $em->getRepository(Todo::class)->getTodoById($data['id']);
-            $todo[0]['modifyAt'] = $todo[0]['modifyAt']->format('d/m/y H:i');
+            $todo->setLibelle($data['libelle'])
+                ->setList([])
+                ->setNbTick(0)
+                ->setModifyAt(new DateTime())
+                ->setClosed(false)
+                ->setUsers($this->getUserFromToken());
+
+            $this->em->persist($todo);
+            $this->em->flush();
+
+            $id = $todo->getId();
+            $todo = $this->em->getRepository(Todo::class)->getTodoById($id);
+            $todoDatetime = $todo['modifyAt'];
+            $todo['modifyAt'] = $todoDatetime->format('d/m/y H:i');
+            $todo['date'] = $todoDatetime->format('d/m/y');
+            $todo['hour'] = $todoDatetime->format('H:i');
 
         } catch (Exception $e) {
 
@@ -100,59 +113,20 @@ class TodoController extends AbstractController
 
 
     /**
-     * @Route("/updateProduct", name="updateProduct")
-     * @param EntityManagerInterface $em
+     * @Route("/deletetodo", name="deletetodo")
      * @param Request $request
      * @return JsonResponse
      */
-    public function todoUpdateProductAction(EntityManagerInterface $em, Request $request)
+    public function deleteTodoAction(Request $request)
     {
         $data = json_decode($request->getContent(), true);
 
-        $cart = new Cart();
-        if(!empty($data['listId']))
-        {
-            $cart = $em->getRepository(Cart::class)->find($data['listId']);
-        }
-
         $error = false;
         try {
+            $todo = $this->em->getRepository(Todo::class)->find($data['id']);
 
-            $list = $cart->getList();
-
-            switch($data['action']) {
-                case 'add':
-                    array_unshift($list, $data['product']);
-                    $cart->setList($list);
-                    break;
-
-                case 'check':
-                    $product = $list[$data['product']];
-                    $product['checked'] = isset($product['checked']) ? !$product['checked'] : true;
-                    $list[$data['product']] = $product;
-                    $cart->setList($list);
-                    break;
-
-                case 'delete':
-                    unset($list[$data['product']]);
-                    $newList = array_values($list);
-                    $cart->setList($newList);
-                    break;
-
-                default:
-                    $cart->setList($list);
-                    break;
-            }
-
-            $cart->setNbProduct(count($cart->getList()));
-            $cart->setClosed(false);
-            $cart->setAmount(0);
-            $cart->setModifyAt(new DateTime());
-            $cart->setUsers($this->getUserFromToken());
-
-            $entityManager = $this->getDoctrine()->getManager();
-            $entityManager->persist($cart);
-            $entityManager->flush();
+            $this->em->remove($todo);
+            $this->em->flush();
 
         } catch (Exception $e) {
 
@@ -160,75 +134,96 @@ class TodoController extends AbstractController
         }
 
         return $this->json([
-            'error' => $error,
-            'list' => $cart->getList(),
-            'listId' => $cart->getId(),
-            'modify' => $cart->getModifyAt()->format('d/m/y H:i')
+            'error' => $error
         ]);
     }
 
 
     /**
-     * @Route("/closelist", name="closelist")
-     * @param EntityManagerInterface $em
+     * @Route("/updatelist", name="updatelist")
      * @param Request $request
      * @return JsonResponse
      */
-    public function todoCloseListAction(EntityManagerInterface $em, Request $request)
+    public function updateList(Request $request)
     {
         $data = json_decode($request->getContent(), true);
 
-        $cart = $em->getRepository(Cart::class)->find($data['listId']);
-        $products = $cart->getList();
-
-        $uncheckedProducts = [];
-        $checkedProducts = [];
-        foreach ($products as $product) {
-            if(!isset($product['checked']) || !$product['checked']) {
-                $uncheckedProducts[] = $product;
-            } else {
-                $checkedProducts[] = $product;
-            }
+        if(!empty($id = $data['todoId']))
+        {
+            $todo = $this->em->getRepository(Todo::class)->find($id);
+        } else {
+            return $this->json(['error' => true]);
         }
 
         $error = false;
         try {
-            $entityManager = $this->getDoctrine()->getManager();
+            $todo->setList($data['list'])
+                ->setNbTick(count($todo->getList()))
+                ->setClosed(false)
+                ->setModifyAt(new DateTime());
 
-            $cart->setList($checkedProducts);
-            $cart->setNbProduct(count($checkedProducts));
-            $cart->setClosed(true);
-            $cart->setAmount($data['amount']);
-            $cart->setModifyAt(new DateTime());
-            $cart->setUsers($this->getUserFromToken());
+            $this->em->persist($todo);
+            $this->em->flush();
 
-            $entityManager->persist($cart);
-
-            if(count($uncheckedProducts)) {
-                $newCart = new Cart();
-                $newCart->setList($uncheckedProducts);
-                $newCart->setNbProduct(count($uncheckedProducts));
-                $newCart->setClosed(false);
-                $newCart->setAmount(0);
-                $newCart->setModifyAt(new DateTime());
-                $newCart->setUsers($this->getUserFromToken());
-
-                $entityManager->persist($newCart);
-            }
-
-            $entityManager->flush();
-
-            $newListId = isset($newCart) ? $newCart->getId() : null;
+            $id = $todo->getId();
+            $todo = $this->em->getRepository(Todo::class)->getTodoById($id);
+            $todoDatetime = $todo['modifyAt'];
+            $todo['modifyAt'] = $todoDatetime->format('d/m/y H:i');
+            $todo['date'] = $todoDatetime->format('d/m/y');
+            $todo['hour'] = $todoDatetime->format('H:i');
 
         } catch (Exception $e) {
 
             $error = $e;
-            $newListId = null;
         }
 
         return $this->json([
             'error' => $error,
-            'newListId' => $newListId,
+            'todo' => $todo,
+        ]);
+    }
+
+
+    /**
+     * @Route("/closetodo", name="closetodo")
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function closeTodo(Request $request)
+    {
+        $data = json_decode($request->getContent(), true);
+
+        if(!empty($id = $data['todoId']))
+        {
+            $todo = $this->em->getRepository(Todo::class)->find($id);
+        } else {
+            return $this->json(['error' => true]);
+        }
+
+        $error = false;
+        try {
+            $todo->setList($data['list'])
+                ->setClosed(true)
+                ->setModifyAt(new DateTime());
+
+            $this->em->persist($todo);
+            $this->em->flush();
+
+            $id = $todo->getId();
+            $todo = $this->em->getRepository(Todo::class)->getTodoById($id);
+            $todoDatetime = $todo['modifyAt'];
+            $todo['modifyAt'] = $todoDatetime->format('d/m/y H:i');
+            $todo['date'] = $todoDatetime->format('d/m/y');
+            $todo['hour'] = $todoDatetime->format('H:i');
+
+        } catch (Exception $e) {
+
+            $error = $e;
+        }
+
+        return $this->json([
+            'error' => $error,
+            'todo' => $todo,
         ]);
     }
 

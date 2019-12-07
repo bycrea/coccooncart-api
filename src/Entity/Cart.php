@@ -44,6 +44,7 @@ class Cart
 
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\User", inversedBy="carts")
+     * @ORM\JoinColumn(nullable=false)
      */
     private $users;
 

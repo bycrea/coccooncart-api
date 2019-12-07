@@ -25,7 +25,7 @@ class Todo
     /**
      * @ORM\Column(type="json")
      */
-    private $list;
+    private $list = [];
 
     /**
      * @ORM\Column(type="integer")
@@ -44,6 +44,7 @@ class Todo
 
     /**
      * @ORM\ManyToOne(targetEntity="App\Entity\User", inversedBy="todos")
+     * @ORM\JoinColumn(nullable=false)
      */
     private $users;
 
@@ -70,12 +71,12 @@ class Todo
         return $this;
     }
 
-    public function getList(): ?string
+    public function getList(): ?array
     {
         return $this->list;
     }
 
-    public function setList(?string $list): self
+    public function setList(array $list): self
     {
         $this->list = $list;
 
@@ -114,6 +115,18 @@ class Todo
     public function setClosed(bool $closed): self
     {
         $this->closed = $closed;
+
+        return $this;
+    }
+
+    public function getUsers(): ?User
+    {
+        return $this->users;
+    }
+
+    public function setUsers(?User $users): self
+    {
+        $this->users = $users;
 
         return $this;
     }
