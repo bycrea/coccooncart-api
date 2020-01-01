@@ -157,9 +157,16 @@ class TodoController extends AbstractController
 
         $error = false;
         try {
+            $isClosed = 0;
+            foreach ($data['list'] as $tick) {
+                if($tick['checked'] == true) {
+                    $isClosed++;
+                }
+            }
+
             $todo->setList($data['list'])
                 ->setNbTick(count($todo->getList()))
-                ->setClosed(false)
+                ->setClosed($isClosed == $todo->getNbTick() ? true : false)
                 ->setModifyAt(new DateTime());
 
             $this->em->persist($todo);
@@ -179,7 +186,7 @@ class TodoController extends AbstractController
 
         return $this->json([
             'error' => $error,
-            'todo' => $todo,
+            'todo' => $todo
         ]);
     }
 

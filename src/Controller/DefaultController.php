@@ -16,7 +16,7 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 class DefaultController extends AbstractController
 {
     /**
-     * @Route("/polling", name="polling")
+     * @Route("/", name="home")
      */
     public function pollingAction()
     {

@@ -17,6 +17,7 @@ class JWTCreatedListener
         $this->em = $entityManager;
     }
 
+
     /**
      * @param JWTCreatedEvent $event
      *
@@ -46,8 +47,12 @@ class JWTCreatedListener
         $options = $this->em->getRepository(UserOptions::class)
             ->findOneBy(['users' => $user]);
 
-        $options->setNbConnection($options->getNbConnection()+1);
-        $options->setLastConnection(new DateTime());
+        if(empty($options)) {
+            $options = new UserOptions($user);
+        } else {
+            $options->setNbConnection($options->getNbConnection()+1);
+            $options->setLastConnection(new DateTime());
+        }
 
         $this->em->persist($options);
         $this->em->flush();

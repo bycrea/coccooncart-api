@@ -23,6 +23,11 @@ class User implements UserInterface
     private $username;
 
     /**
+     * @ORM\Column(type="string", length=255)
+     */
+    private $email;
+
+    /**
      * @ORM\Column(type="json")
      */
     private $roles = [];
@@ -51,7 +56,8 @@ class User implements UserInterface
 
     public function __construct()
     {
-        //$this->setOptions(new UserOptions($this));
+        $this->setRoles(["ROLE_USER"]);
+        $this->setOptions(new UserOptions($this));
     }
 
 
@@ -73,6 +79,18 @@ class User implements UserInterface
     public function setUsername(string $username): self
     {
         $this->username = $username;
+
+        return $this;
+    }
+
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
+
+    public function setEmail(string $email): self
+    {
+        $this->email = $email;
 
         return $this;
     }
